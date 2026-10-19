@@ -1,0 +1,197 @@
+{
+  "info": {
+    "_postman_id": "0417915e-f40b-471f-821b-23188dafb2c6",
+    "name": "Car Damage Detection API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "58511183",
+    "_collection_link": "https://go.postman.co/collection/58511183-0417915e-f40b-471f-821b-23188dafb2c6?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"Responds in under 2s\", () => pm.expect(pm.response.responseTime).to.be.below(2000));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/ping",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "ping"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Predict - valid image",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\n\r\nconst body = pm.response.json();\r\nconst classes = [\r\n  \"Front Breakage\", \"Front Crushed\", \"Front Normal\",\r\n  \"Rear Breakage\", \"Rear Crushed\", \"Rear Normal\",\r\n];\r\n\r\npm.test(\"Response has exactly the three contract fields\", () => {\r\n  pm.expect(body).to.have.all.keys(\"prediction\", \"confidence\", \"probabilities\");\r\n});\r\n\r\npm.test(\"Prediction is one of the six classes\", () => {\r\n  pm.expect(classes).to.include(body.prediction);\r\n});\r\n\r\npm.test(\"Probabilities cover all six classes and sum to 1\", () => {\r\n  pm.expect(Object.keys(body.probabilities)).to.have.members(classes);\r\n  const total = Object.values(body.probabilities).reduce((a, b) => a + b, 0);\r\n  pm.expect(total).to.be.closeTo(1, 0.01);\r\n});\r\n\r\npm.test(\"Prediction and confidence agree with the probabilities\", () => {\r\n  const [topClass, topProbability] = Object.entries(body.probabilities)\r\n    .sort((a, b) => b[1] - a[1])[0];\r\n  pm.expect(body.prediction).to.eql(topClass);\r\n  pm.expect(body.confidence).to.eql(topProbability);\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": [
+                "postman/fixtures/car.jpg"
+              ]
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/predict",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "predict"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Predict - not an image",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"A non-image upload is rejected as an unsupported type\", () =>\r\n  pm.response.to.have.status(415));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": [
+                "postman/fixtures/not-an-image.txt"
+              ]
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/predict",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "predict"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Predict - corrupt image",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"A file that only claims to be a JPEG is rejected\", () =>\r\n  pm.response.to.have.status(400));\r\n\r\npm.test(\"Error says the image could not be read\", () => {\r\n  pm.expect(pm.response.json().detail).to.include(\"readable image\");\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": [
+                "postman/fixtures/corrupt.jpg"
+              ]
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/predict",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "predict"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Predict - no file",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"A request with no file is rejected\", () => pm.response.to.have.status(422));\r\n\r\npm.test(\"Error names the missing field\", () => {\r\n  const detail = JSON.stringify(pm.response.json().detail);\r\n  pm.expect(detail).to.include(\"file\");\r\n  pm.expect(detail).to.include(\"missing\");\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": []
+        },
+        "url": {
+          "raw": "{{base_url}}/predict",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "predict"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000"
+    }
+  ]
+}

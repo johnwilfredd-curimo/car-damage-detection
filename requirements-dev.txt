@@ -1,0 +1,6 @@
+-r requirements.txt
+jupyterlab
+matplotlib==3.11.1
+scikit-learn==1.7.2
+numpy==2.3.3
+optuna==5.0.0
