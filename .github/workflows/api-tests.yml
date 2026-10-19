@@ -1,0 +1,29 @@
+name: API tests
+
+# Runs the committed Postman collection against the live API on every push,
+# and on demand from the Actions tab. GitHub's runners cannot reach localhost,
+# so this tests the deployed service, which doubles as a deployment check.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  newman:
+    name: Postman collection vs. production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Run Postman collection
+        run: >
+          npx --yes newman run
+          postman/car-damage-detection.postman_collection.json
+          --env-var base_url=https://car-damage-api.srv1818955.hstgr.cloud
